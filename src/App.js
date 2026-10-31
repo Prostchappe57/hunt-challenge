@@ -255,7 +255,8 @@ function generateTraits(budget) {
   let attempts = 0;
   while (remaining > 0 && attempts < 100) {
     attempts++;
-    const affordable = pool.filter(t => t.cost <= remaining && !picked.find(p => p.name === t.name));
+    const left = remaining;
+    const affordable = pool.filter(t => t.cost <= left && !picked.find(p => p.name === t.name));
     if (affordable.length === 0) break;
     const trait = getRandom(affordable);
     picked.push(trait);
