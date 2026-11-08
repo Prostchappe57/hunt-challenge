@@ -16,8 +16,20 @@ const WEAPON_DATA = {
   "Spezial": "Nitro Express|5,Crossbow|4,Bomb Lance|3,Dolch 96 Precision|3,Hunting Bow|3,Bomb Launcher|2,Chu Ko Nu|2,Dolch 96|2,Hand Crossbow|1",
   "Nahkampf": "Combat Axe|2,Katana|2,Railroad Hammer|2,Baseball Bat|1,Cavalry Saber|1,Machete|1",
 };
+const DE_W = {
+  "Lemat Carbine": "LeMat Karabiner", "Officer Carbine": "Offizierskarabiner", "Nagant M1895 Precision": "Nagant M1895 Präzision",
+  "Vandal 73C": "Vandale 73C", "Bornheim No. 3": "Bornheim Nr. 3", "New Army": "Neue Armee", "Officer": "Offizier",
+  "Maynard Sniper Silencer": "Maynard-Scharfschütze Schalldämpfer", "Centennial": "Zentenarium", "Maynard Sniper": "Maynard-Scharfschütze",
+  "Vetterli 71 Cyclone": "Vetterli 71 Zyklon", "1865 Carbine": "1865 Karabiner", "Centennial Shorty": "Zentenarium Mini",
+  "Drilling Shorty": "Drilling Mini", "Scottfield Precision": "Scottfield Präzision", "Springfield 1866 Shorty": "Springfield 1866 Mini",
+  "Uppercut Precision": "Uppercut Präzision", "Haymaker": "Schwinger", "Sparks Pistol": "Sparks Pistole", "Slate": "Neuanfang",
+  "Auto-4 Shorty": "Auto-4 Mini", "Rival 78 Shorty": "Rival 78 Mini", "Romero 77 Shorty": "Romero 77 Mini",
+  "Specter 1882 Shorty": "Specter 1882 Mini", "Terminus Shorty": "Terminus Mini", "Crossbow": "Armbrust", "Bomb Lance": "Sprenglanze",
+  "Dolch 96 Precision": "Dolch 96 Präzision", "Hunting Bow": "Jagdbogen", "Bomb Launcher": "Bombenwerfer", "Hand Crossbow": "Handarmbrust",
+  "Combat Axe": "Kampfaxt", "Railroad Hammer": "Schienenhammer", "Baseball Bat": "Baseballschläger", "Cavalry Saber": "Kavalleriesäbel",
+};
 const WEAPON_CATEGORIES = Object.keys(WEAPON_DATA);
-const WEAPONS = WEAPON_CATEGORIES.flatMap(a => WEAPON_DATA[a].split(",").map(x => { const p = x.split("|"); return { n: p[0], s: +p[1], a }; }));
+const WEAPONS = WEAPON_CATEGORIES.flatMap(a => WEAPON_DATA[a].split(",").map(x => { const p = x.split("|"); return { n: DE_W[p[0]] ? `${DE_W[p[0]]} (${p[0]})` : p[0], s: +p[1], a }; }));
 const WEAPONS_EXACT = WEAPONS.map(w => w.n);
 
 const PLAYSTYLES = [
@@ -46,53 +58,53 @@ const GROUP_CHALLENGES = [
 
 // ── TRAITS mit Punktekosten ──────────────────────────────────────────────────
 const TRAITS = [
-  { name: "Adrenaline", cost: 1, desc: "Kleiner Ausdauerschub bei kritischer Gesundheit" },
-  { name: "Assailant", cost: 1, desc: "Besserer Nahkampf mit Wurfmessern und -äxten" },
-  { name: "Blade Seer", cost: 1, desc: "Pfeile, Bolzen und Wurfwaffen in Dark Sight sichtbar" },
-  { name: "Dauntless", cost: 1, desc: "Geworfene Sprengstoffe lassen sich entschärfen" },
-  { name: "Decoy Supply", cost: 1, desc: "Köder an Munitionskisten auffüllen" },
-  { name: "Kiteskin", cost: 1, desc: "Deutlich weniger Fallschaden" },
-  { name: "Magpie", cost: 1, desc: "Kopfgeld-Token gibt Gegengift, Ausdauer und Regeneration" },
-  { name: "Poacher", cost: 1, desc: "Fallen leise legen und entschärfen" },
-  { name: "Poison Sense", cost: 1, desc: "Vergiftete Hunter in Dark Sight sichtbar" },
-  { name: "Vigilant", cost: 1, desc: "Fallen und Käfer in Dark Sight hervorgehoben" },
-  { name: "Whispersmith", cost: 1, desc: "Leiseres Wechseln der Ausrüstung" },
-  { name: "Bulwark", cost: 2, desc: "50 % weniger Explosions- und Bomb-Lance-Schaden" },
-  { name: "Martialist", cost: 2, desc: "Katana einstecken für starken ersten Schlag" },
-  { name: "Salveskin", cost: 2, desc: "Weniger Feuerschaden" },
-  { name: "Scopesmith", cost: 2, desc: "Nach dem Schuss im Zielfernrohr bleiben" },
-  { name: "Steady Aim", cost: 2, desc: "Weniger Waffenzittern im Zielfernrohr" },
-  { name: "Vulture", cost: 2, desc: "Looten von Huntern gibt immer Geld" },
-  { name: "Ambidextrous", cost: 3, desc: "Schnelleres Nachladen bei Waffenpaaren" },
-  { name: "Bloodless", cost: 3, desc: "Blutung wird nicht schlimmer" },
-  { name: "Bolt Thrower", cost: 3, desc: "Schnelleres Armbrust-Nachladen" },
-  { name: "Gator Legs", cost: 3, desc: "Schneller im tiefen Wasser" },
-  { name: "Ghoul", cost: 3, desc: "Monster töten heilt ein wenig" },
-  { name: "Hornskin", cost: 3, desc: "25 % weniger Schaden durch stumpfen Nahkampf" },
-  { name: "Hundred Hands", cost: 3, desc: "Mehr Bogenschaden, Pfeile im Nahkampf nutzbar" },
-  { name: "Iron Eye", cost: 3, desc: "Zwischen Schüssen im Visier bleiben (Repetierer)" },
-  { name: "Mithridatist", cost: 3, desc: "Viel schnellere Erholung von Gift" },
-  { name: "Resilience", cost: 3, desc: "Wiederbelebt mit voller Gesundheit" },
-  { name: "Vigor", cost: 3, desc: "Doppelte Regeneration in Dark Sight" },
-  { name: "Beastface", cost: 4, desc: "Tiere reagieren erst aus kürzerer Distanz" },
-  { name: "Bulletgrubber", cost: 4, desc: "Beim Teilladen die Patrone behalten" },
-  { name: "Determination", cost: 4, desc: "Ausdauer erholt sich früher" },
-  { name: "Fast Fingers", cost: 4, desc: "Schnelleres Nachladen bei Einzelschussgewehren" },
-  { name: "Levering", cost: 4, desc: "Schnelleres Hüftfeuer bei Hebelwaffen" },
-  { name: "Packmule", cost: 4, desc: "Zusätzliches Werkzeug oder Verbrauchsgut beim Looten" },
-  { name: "Serpent", cost: 4, desc: "Clues und Rifts aus der Distanz in Dark Sight nutzen" },
-  { name: "Silent Killer", cost: 4, desc: "Leisere Nahkampfangriffe" },
-  { name: "Conduit", cost: 5, desc: "Gesundheit und Ausdauer bei Clue oder geschlossenem Rift" },
-  { name: "Greyhound", cost: 5, desc: "Länger mit voller Geschwindigkeit sprinten" },
-  { name: "Lightfoot", cost: 5, desc: "Lautlos springen, fallen und klettern" },
-  { name: "Physician", cost: 5, desc: "Schnelleres Verbinden" },
-  { name: "Witness", cost: 5, desc: "Tote Hunter und Monster in Dark Sight sehen" },
-  { name: "Frontiersman", cost: 6, desc: "Werkzeuge einmal öfter nutzbar" },
-  { name: "Pitcher", cost: 6, desc: "Grössere Wurfweite" },
-  { name: "Quartermaster", cost: 8, desc: "+1 Waffenkapazität (6 statt 5 Ausrüstungspunkte)" },
-  { name: "Fanning", cost: 8, desc: "Schnellfeuer mit einhändigen Single-Action-Pistolen" },
-  { name: "Doctor", cost: 9, desc: "Verbandskästen heilen doppelt" },
-];
+  ["Adrenaline", "Adrenalin", 1, "Kleiner Ausdauerschub bei kritischer Gesundheit"],
+  ["Assailant", "Attentäter", 1, "Besserer Nahkampf mit Wurfmessern und -äxten"],
+  ["Blade Seer", "Klingenseher", 1, "Pfeile, Bolzen und Wurfwaffen in Dark Sight sichtbar"],
+  ["Dauntless", "Unerschrocken", 1, "Geworfene Sprengstoffe lassen sich entschärfen"],
+  ["Decoy Supply", "", 1, "Köder an Munitionskisten auffüllen"],
+  ["Kiteskin", "Fallschirm", 1, "Deutlich weniger Fallschaden"],
+  ["Magpie", "", 1, "Kopfgeld-Token gibt Gegengift, Ausdauer und Regeneration"],
+  ["Poacher", "", 1, "Fallen leise legen und entschärfen"],
+  ["Poison Sense", "Giftsinn", 1, "Vergiftete Hunter in Dark Sight sichtbar"],
+  ["Vigilant", "", 1, "Fallen und Käfer in Dark Sight hervorgehoben"],
+  ["Whispersmith", "Flüsterschmied", 1, "Leiseres Wechseln der Ausrüstung"],
+  ["Bulwark", "Bollwerk", 2, "50 % weniger Explosions- und Sprenglanzen-Schaden"],
+  ["Martialist", "Martialisch", 2, "Katana einstecken für starken ersten Schlag"],
+  ["Salveskin", "Feuerfest", 2, "Weniger Feuerschaden"],
+  ["Scopesmith", "Visier-Virtuose", 2, "Nach dem Schuss im Zielfernrohr bleiben"],
+  ["Steady Aim", "Ruhiger Atem", 2, "Weniger Waffenzittern im Zielfernrohr"],
+  ["Vulture", "", 2, "Looten von Huntern gibt immer Geld"],
+  ["Greyhound", "Windhund", 2, "Länger mit voller Geschwindigkeit sprinten"],
+  ["Mithridatist", "Mithridatisation", 2, "Viel schnellere Erholung von Gift"],
+  ["Ambidextrous", "Beidhändig", 3, "Schnelleres Nachladen bei Waffenpaaren"],
+  ["Bloodless", "Blutarm", 3, "Blutung wird nicht schlimmer"],
+  ["Bolt Thrower", "Bolzenwerfer", 3, "Schnelleres Armbrust-Nachladen"],
+  ["Gator Legs", "Alligatorbeine", 3, "Schneller im tiefen Wasser"],
+  ["Ghoul", "Guhl", 3, "Monster töten heilt ein wenig"],
+  ["Hornskin", "Dickes Fell", 3, "25 % weniger Schaden durch stumpfen Nahkampf"],
+  ["Hundred Hands", "Hundert Hände", 3, "Mehr Bogenschaden, Pfeile im Nahkampf nutzbar"],
+  ["Iron Eye", "Eisernes Auge", 3, "Zwischen Schüssen im Visier bleiben (Repetierer)"],
+  ["Resilience", "Widerstandskraft", 3, "Wiederbelebt mit voller Gesundheit"],
+  ["Vigor", "Lebenskraft", 3, "Doppelte Regeneration in Dark Sight"],
+  ["Beastface", "Tiermaske", 4, "Tiere reagieren erst aus kürzerer Distanz"],
+  ["Bulletgrubber", "Kugelfänger", 4, "Beim Teilladen die Patrone behalten"],
+  ["Determination", "", 4, "Ausdauer erholt sich früher"],
+  ["Fast Fingers", "Flinke Finger", 4, "Schnelleres Nachladen bei Einzelschussgewehren"],
+  ["Packmule", "Packesel", 4, "Zusätzliches Werkzeug oder Verbrauchsgut beim Looten"],
+  ["Pitcher", "Weitwerfer", 4, "Grössere Wurfweite"],
+  ["Serpent", "Schlange", 4, "Clues und Rifts aus der Distanz in Dark Sight nutzen"],
+  ["Silent Killer", "Stiller Killer", 4, "Leisere Nahkampfangriffe"],
+  ["Conduit", "", 5, "Gesundheit und Ausdauer bei Clue oder geschlossenem Rift"],
+  ["Lightfoot", "Leichtfüssig", 5, "Lautlos springen, fallen und klettern"],
+  ["Physician", "Notarzt", 5, "Schnelleres Verbinden"],
+  ["Witness", "Zeuge", 5, "Tote Hunter und Monster in Dark Sight sehen"],
+  ["Frontiersman", "", 6, "Werkzeuge einmal öfter nutzbar"],
+  ["Levering", "Hebelwirkung", 7, "Schnelleres Hüftfeuer bei Hebelwaffen"],
+  ["Quartermaster", "Quartiermeister", 8, "+1 Waffenkapazität (6 statt 5 Ausrüstungspunkte)"],
+  ["Fanning", "Fächern", 8, "Schnellfeuer mit einhändigen Single-Action-Pistolen"],
+  ["Doctor", "Doktor", 9, "Verbandskästen heilen doppelt"],
+].map(([name, de, cost, desc]) => ({ name, de, cost, desc }));
 
 // ── ALLE LEGENDARY HUNTER SKINS ─────────────────────────────────────────────
 // Format: "English Name (Deutscher Name)"
@@ -401,7 +413,7 @@ function challengeText(pl, res, g, m, budget) {
     if (c.playstyle) l += ` | 🎮 ${c.playstyle}`;
     if (c.chat) l += ` | 💬 ${c.chat}`;
     if (c.role) l += ` | 🧭 ${c.role}`;
-    if (c.traitResult) l += ` | ⚡ ${c.traitResult.traits.map(t => t.name).join(", ") || "–"} (${c.traitResult.spent}/${budget} P)`;
+    if (c.traitResult) l += ` | ⚡ ${c.traitResult.traits.map(t => t.de ? `${t.de} (${t.name})` : t.name).join(", ") || "–"} (${c.traitResult.spent}/${budget} P)`;
     lines.push(l);
   });
   return lines.join("\n");
@@ -1142,7 +1154,7 @@ export default function HuntChallengeGenerator() {
                           {ch.traitResult.traits.map((t, ti) => (
                             <div key={ti} style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                               <div>
-                                <span style={{ fontFamily: "'IM Fell English', serif", fontSize: 13, color: "#e8c080" }}>{t.name}</span>
+                                <span style={{ fontFamily: "'IM Fell English', serif", fontSize: 13, color: "#e8c080" }}>{t.de ? `${t.de} (${t.name})` : t.name}</span>
                                 <span style={{ fontFamily: "'IM Fell English', serif", fontStyle: "italic", fontSize: 10, color: "#6a5030", marginLeft: 6 }}>{t.desc}</span>
                               </div>
                               <span style={{ fontSize: 10, color: "#b45014", flexShrink: 0, marginLeft: 4 }}>{t.cost}P</span>
