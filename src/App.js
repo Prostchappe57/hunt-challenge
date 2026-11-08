@@ -287,8 +287,26 @@ function weaponBonus(w) {
   return 0;
 }
 function challengeBonus(ch) {
-  return (ch.playstyle ? (PLAYSTYLE_BONUS[ch.playstyle] || 1) : 0) + weaponBonus(ch.weapon);
+  return (ch.playstyle ? (PLAYSTYLE_BONUS[ch.playstyle] || 1) : 0) + weaponBonus(ch.weapon) + (ch.chat ? (CHAT_BONUS[ch.chat] || 0) : 0);
 }
+const CHAT_RULES = [
+  "Meint immer das Gegenteil", "Nur in Reimen sprechen", "Mittelalterlich sprechen (Hört, edler Gefährte!)",
+  "Nur im Flüsterton", "Wie ein Pirat sprechen", "Wie ein Nachrichtensprecher", "Wie ein Sportkommentator",
+  "Nur in Fragen sprechen", "Keine Zahlen und keine Himmelsrichtungen nennen", "Nie «ja» oder «nein» sagen",
+  "Nur Einwortsätze", "Jeden Satz mit «Meine Herren» beginnen", "Nur Tiergeräusche bei Gefahr",
+  "Wie im Zeitlupen-Kommentar sprechen", "Nur Hochdeutsch (kein Dialekt)", "Nur Dialekt (kein Hochdeutsch)",
+  "Jeder Treffer des Teams wird laut gefeiert", "Wer stirbt, bekommt einen Nachruf",
+];
+const CHAT_BONUS = {
+  "Meint immer das Gegenteil": 2, "Nur in Reimen sprechen": 2, "Nur in Fragen sprechen": 1,
+  "Keine Zahlen und keine Himmelsrichtungen nennen": 2, "Nie «ja» oder «nein» sagen": 1, "Nur Einwortsätze": 1,
+};
+const ROLES = [
+  "Späher – meldet alles, was er sieht", "Sanitäter – hält das Team am Leben", "Köder – lockt Gegner an",
+  "Anführer – alle folgen seinen Befehlen", "Scharfschütze – schiesst nur aus der Distanz", "Nachhut – sichert den Rücken",
+  "Kassierer – looted alles und verteilt fair", "Taktiker – plant jeden Schritt laut", "Berserker – immer vorneweg",
+  "Geist – bleibt leise und unentdeckt",
+];
 function groupBonus(g) { return g ? (GROUP_BONUS[g.name] || 1) : 0; }
 
 function generateTraits(budget) {
@@ -327,7 +345,9 @@ function generateChallenge(cfg, sameWeapon) {
   const weapon = sameWeapon || pickWeapon(cfg.weaponMode, cfg.excl);
   const playstyle = cfg.includePlaystyle ? pickPlaystyle(cfg.excl, cfg.customStyles) : null;
   const traitResult = cfg.traitBudget > 0 ? generateTraits(cfg.traitBudget) : null;
-  return { weapon, playstyle, traitResult };
+  const chat = cfg.includeChat ? getRandom(allowed([...CHAT_RULES, ...(cfg.customChat || [])], cfg.excl.chat)) : null;
+  const role = cfg.includeRole ? getRandom(allowed(ROLES, cfg.excl.role)) : null;
+  return { weapon, playstyle, traitResult, chat, role };
 }
 
 function generateSkin(skinMode, selectedTheme) {
@@ -351,6 +371,8 @@ function challengeText(pl, res, g, m, budget) {
   res.forEach((c, i) => {
     let l = `${pl[i] ? pl[i].name : "Spieler"}: 🔫 ${c.weapon}`;
     if (c.playstyle) l += ` | 🎮 ${c.playstyle}`;
+    if (c.chat) l += ` | 💬 ${c.chat}`;
+    if (c.role) l += ` | 🧭 ${c.role}`;
     if (c.traitResult) l += ` | ⚡ ${c.traitResult.traits.map(t => t.name).join(", ") || "–"} (${c.traitResult.spent}/${budget} P)`;
     lines.push(l);
   });
@@ -703,6 +725,9 @@ export default function HuntChallengeGenerator() {
   const [rerollLimit, setRerollLimit] = usePersist("hunt-rerolllimit", 99);
   const [excl, setExcl] = usePersist("hunt-excl", { cat: [], weapon: [], style: [] });
   const [customStyles, setCustomStyles] = usePersist("hunt-custom-styles", []);
+  const [includeChat, setIncludeChat] = usePersist("hunt-chat", false);
+  const [includeRole, setIncludeRole] = usePersist("hunt-role", false);
+  const [customChat, setCustomChat] = usePersist("hunt-custom-chat", []);
   const [customGroups, setCustomGroups] = usePersist("hunt-custom-groups", []);
   const [history, setHistory] = usePersist("hunt-history", []);
   const [scores, setScores] = usePersist("hunt-scores", {});
@@ -727,13 +752,14 @@ export default function HuntChallengeGenerator() {
   const [showCustom, setShowCustom] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
   const [newStyle, setNewStyle] = useState("");
+  const [newChat, setNewChat] = useState("");
   const [newGroupName, setNewGroupName] = useState("");
   const [newGroupDesc, setNewGroupDesc] = useState("");
 
   const activePlayers = players.slice(0, playerCount);
-  const cfg = { weaponMode, includePlaystyle, traitBudget, excl, customStyles };
+  const cfg = { weaponMode, includePlaystyle, traitBudget, excl, customStyles, includeChat, includeRole, customChat };
   const allGroups = [...GROUP_CHALLENGES, ...customGroups.filter(g => g.name).map(g => ({ name: g.name, desc: g.desc || "Eigene Gruppenchallenge", icon: "✨" }))];
-  const excludedCount = (excl.cat || []).length + (excl.weapon || []).length + (excl.style || []).length;
+  const excludedCount = (excl.cat || []).length + (excl.weapon || []).length + (excl.style || []).length + (excl.chat || []).length + (excl.role || []).length;
   const isMobile = useIsMobile();
 
   const updateName = (idx, name) => setPlayers(prev => prev.map((p, i) => i === idx ? { ...p, name } : p));
@@ -805,6 +831,8 @@ export default function HuntChallengeGenerator() {
       if (idx !== i) return c;
       if (part === "weapon") return { ...c, weapon: pickWeapon(weaponMode, excl) };
       if (part === "playstyle") return { ...c, playstyle: pickPlaystyle(excl, customStyles) };
+      if (part === "chat") return { ...c, chat: getRandom(allowed([...CHAT_RULES, ...customChat], excl.chat)) };
+      if (part === "role") return { ...c, role: getRandom(allowed(ROLES, excl.role)) };
       return { ...c, traitResult: generateTraits(traitBudget) };
     }));
     setUsed(prev => prev.map((u, idx) => idx === i ? u + 1 : u));
@@ -928,6 +956,8 @@ export default function HuntChallengeGenerator() {
               <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 18 }}>
                 {[
                   [includePlaystyle, () => setIncludePlaystyle(v => !v), "Individuelle Spielweise würfeln"],
+                  [includeChat, () => setIncludeChat(v => !v), "Chat-Regel würfeln"],
+                  [includeRole, () => setIncludeRole(v => !v), "Rolle würfeln"],
                   [includeGroup, () => setIncludeGroup(v => !v), "Gruppenchallenge würfeln"],
                   [includeMap, () => setIncludeMap(v => !v), "Karte & Boss würfeln"],
                   [duel, () => setDuel(v => !v), "Duell: alle bekommen dieselbe Waffe"],
@@ -945,7 +975,7 @@ export default function HuntChallengeGenerator() {
                 {showFilter && (
                   <div style={{ marginTop: 14 }}>
                     <div style={{ fontFamily: "'IM Fell English', serif", fontStyle: "italic", fontSize: 12, color: "#6a5030", marginBottom: 10 }}>Antippen = ausschliessen (durchgestrichen). Die Auswahl bleibt gespeichert.</div>
-                    {[["cat", "Waffenkategorien", WEAPON_CATEGORIES], ["weapon", "Genaue Waffen", WEAPONS_EXACT], ["style", "Spielweisen", [...PLAYSTYLES, ...customStyles]]].map(([kind, label, list]) => (
+                    {[["cat", "Waffenkategorien", WEAPON_CATEGORIES], ["weapon", "Genaue Waffen", WEAPONS_EXACT], ["style", "Spielweisen", [...PLAYSTYLES, ...customStyles]], ["chat", "Chat-Regeln", [...CHAT_RULES, ...customChat]], ["role", "Rollen", ROLES]].map(([kind, label, list]) => (
                       <div key={kind} style={{ marginBottom: 12 }}>
                         <label style={cL}>{label}</label>
                         <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
@@ -963,7 +993,7 @@ export default function HuntChallengeGenerator() {
 
               {/* Eigene Challenges */}
               <div>
-                <button onClick={() => setShowCustom(v => !v)} style={btn(showCustom)}>✨ Eigene Challenges {showCustom ? "ausblenden" : "hinzufügen"}{customStyles.length + customGroups.length > 0 ? ` (${customStyles.length + customGroups.length})` : ""}</button>
+                <button onClick={() => setShowCustom(v => !v)} style={btn(showCustom)}>✨ Eigene Challenges {showCustom ? "ausblenden" : "hinzufügen"}{customStyles.length + customGroups.length + customChat.length > 0 ? ` (${customStyles.length + customGroups.length + customChat.length})` : ""}</button>
                 {showCustom && (
                   <div style={{ marginTop: 14 }}>
                     <label style={cL}>Eigene Spielweise</label>
@@ -974,6 +1004,16 @@ export default function HuntChallengeGenerator() {
                     {customStyles.map((s, i) => (
                       <div key={i} style={{ fontFamily: "'IM Fell English', serif", fontSize: 13, color: "#a09060", marginBottom: 4 }}>
                         {s} <button onClick={() => setCustomStyles(prev => prev.filter((_, idx) => idx !== i))} title="Entfernen" style={{ background: "transparent", border: "none", color: "#5a4030", cursor: "pointer", fontSize: 15 }}>×</button>
+                      </div>
+                    ))}
+                    <label style={{ ...cL, marginTop: 14 }}>Eigene Chat-Regel</label>
+                    <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 10 }}>
+                      <input value={newChat} onChange={e => setNewChat(e.target.value)} placeholder="z. B. Nur in Haiku sprechen" style={{ ...inputStyle, textAlign: "left", flex: "1 1 220px", width: "auto" }} />
+                      <button onClick={() => { const t = newChat.trim(); if (t) { setCustomChat(prev => [...prev, t]); setNewChat(""); } }} style={btn(false)}>＋ Hinzufügen</button>
+                    </div>
+                    {customChat.map((s, i) => (
+                      <div key={i} style={{ fontFamily: "'IM Fell English', serif", fontSize: 13, color: "#a09060", marginBottom: 4 }}>
+                        💬 {s} <button onClick={() => setCustomChat(prev => prev.filter((_, idx) => idx !== i))} title="Entfernen" style={{ background: "transparent", border: "none", color: "#5a4030", cursor: "pointer", fontSize: 15 }}>×</button>
                       </div>
                     ))}
                     <label style={{ ...cL, marginTop: 14 }}>Eigene Gruppenchallenge</label>
@@ -1033,7 +1073,7 @@ export default function HuntChallengeGenerator() {
                     <div style={{ position: "absolute", bottom: 7, left: 9, color: "rgba(180,80,20,0.3)", fontSize: 9 }}>✦</div>
                     <div style={{ fontSize: 10, letterSpacing: "0.3em", color: "#b45014", textTransform: "uppercase", marginBottom: 12, display: "flex", alignItems: "center", gap: 7 }}><Crosshair />{activePlayers[i]?.name}</div>
 
-                    <div style={{ marginBottom: ch.playstyle || ch.traitResult ? 12 : 0 }}>
+                    <div style={{ marginBottom: ch.playstyle || ch.traitResult || ch.chat || ch.role ? 12 : 0 }}>
                       <div style={sL}>🔫 Waffe{rerollBtn(i, "weapon")}</div>
                       <div style={{ fontFamily: "'IM Fell English', serif", fontSize: "clamp(13px, 2.5vw, 16px)", color: "#e8d0a0", lineHeight: 1.3 }}>{ch.weapon}</div>
                     </div>
@@ -1042,6 +1082,20 @@ export default function HuntChallengeGenerator() {
                       <div style={{ borderTop: "1px solid rgba(180,80,20,0.15)", paddingTop: 10, marginBottom: ch.traitResult ? 10 : 0 }}>
                         <div style={sL}>🎮 Spielweise{rerollBtn(i, "playstyle")}</div>
                         <div style={{ fontFamily: "'IM Fell English', serif", fontStyle: "italic", fontSize: "clamp(11px, 2vw, 13px)", color: "#a09060", lineHeight: 1.4 }}>{ch.playstyle}</div>
+                      </div>
+                    )}
+
+                    {ch.chat && (
+                      <div style={{ borderTop: "1px solid rgba(180,80,20,0.15)", paddingTop: 10, marginBottom: 10 }}>
+                        <div style={sL}>💬 Chat-Regel{rerollBtn(i, "chat")}</div>
+                        <div style={{ fontFamily: "'IM Fell English', serif", fontStyle: "italic", fontSize: "clamp(11px, 2vw, 13px)", color: "#a09060", lineHeight: 1.4 }}>{ch.chat}</div>
+                      </div>
+                    )}
+
+                    {ch.role && (
+                      <div style={{ borderTop: "1px solid rgba(180,80,20,0.15)", paddingTop: 10, marginBottom: 10 }}>
+                        <div style={sL}>🧭 Rolle{rerollBtn(i, "role")}</div>
+                        <div style={{ fontFamily: "'IM Fell English', serif", fontStyle: "italic", fontSize: "clamp(11px, 2vw, 13px)", color: "#a09060", lineHeight: 1.4 }}>{ch.role}</div>
                       </div>
                     )}
 
