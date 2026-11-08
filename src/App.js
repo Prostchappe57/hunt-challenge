@@ -6,22 +6,19 @@ const PLAYERS_DEFAULT = [
   { id: 3, name: "Spieler 3" },
 ];
 
-const WEAPON_CATEGORIES = [
-  "Shotgun", "Rifle", "Pistol", "Dolch / Melee", "Sparks / Single Shot",
-  "Nitro Express", "Crossbow", "Bomblance", "Lemat / Zweifach",
-];
-
-const WEAPONS_EXACT = [
-  "Romero 77", "Romero Talon", "Rival 78", "Slate", "Caldwell Rival 78 Handcannon",
-  "Caldwell Conversion Uppercut", "Mosin-Nagant M1891", "Mosin Obrez",
-  "Winfield M1873", "Winfield Centennial", "Winfield M1876 Centennial Shorty",
-  "Springfield 1866", "Bornheim No.3", "Krag-Jørgensen", "Lebel 1886",
-  "Scottfield Spitfire", "Nagant M1895", "Nagant Silencer", "Caldwell Pax",
-  "Caldwell Conversion Chain Pistol", "Scottfield Model 3", "Dolch 96",
-  "Bornheim Match", "Bowie Knife", "Kukri", "Combat Axe", "Dusters", "Machete",
-  "Sparks LRR", "Sparks Pistol", "Nitro Express Rifle", "Poison Crossbow",
-  "Bomblance", "Lemat Mark II",
-];
+// Waffen nach Update 2.8: Grösse 1–5 (= Ausrüstungspunkte), zwei Waffen dürfen zusammen max. 5 kosten (6 mit Quartermaster)
+const WEAPON_DATA = {
+  "Kompakt": "Infantry 73L|4,Marathon|4,Ranger 73|4,Frontier 73C|3,Lemat Carbine|3,Officer Carbine|3,Bornheim No.3 Match|2,Nagant M1895 Precision|2,Vandal 73C|2,Bornheim No. 3|1,Conversion|1,LeMat|1,Nagant M1895|1,New Army|1,Officer|1",
+  "Mittel": "Maynard Sniper Silencer|5,Centennial|4,Drilling|4,Maynard Sniper|4,Springfield 1866|4,Vetterli 71 Cyclone|4,1865 Carbine|3,Vetterli 71|3,Centennial Shorty|2,Drilling Shorty|2,Scottfield Precision|2,Springfield 1866 Shorty|2,Pax|1,Scottfield|1",
+  "Lang": "Mako 1895|4,Martini-Henry|4,Sparks|4,1890 Cavalry|3,Uppercut Precision|3,Haymaker|2,Uppercut|2,Sparks Pistol|1",
+  "Spezial-Lang": "Krag|4,Lebel 1886|4,Mosin-Nagant|4,Berthier 1892|3,Mosin Obrez Match|3,Mosin Obrez|2",
+  "Schrot": "Auto-5|5,Rival 78|4,Romero 77|4,Slate|4,Specter 1882|4,Terminus|4,Auto-4 Shorty|3,Burgess|3,Rival 78 Shorty|2,Romero 77 Shorty|2,Specter 1882 Shorty|2,Terminus Shorty|2",
+  "Spezial": "Nitro Express|5,Crossbow|4,Bomb Lance|3,Dolch 96 Precision|3,Hunting Bow|3,Bomb Launcher|2,Chu Ko Nu|2,Dolch 96|2,Hand Crossbow|1",
+  "Nahkampf": "Combat Axe|2,Katana|2,Railroad Hammer|2,Baseball Bat|1,Cavalry Saber|1,Machete|1",
+};
+const WEAPON_CATEGORIES = Object.keys(WEAPON_DATA);
+const WEAPONS = WEAPON_CATEGORIES.flatMap(a => WEAPON_DATA[a].split(",").map(x => { const p = x.split("|"); return { n: p[0], s: +p[1], a }; }));
+const WEAPONS_EXACT = WEAPONS.map(w => w.n);
 
 const PLAYSTYLES = [
   "Nur Nahkampf (Melee only)", "Kein Heilen erlaubt", "Nur Pistolen & Messer",
@@ -49,36 +46,52 @@ const GROUP_CHALLENGES = [
 
 // ── TRAITS mit Punktekosten ──────────────────────────────────────────────────
 const TRAITS = [
-  { name: "Greyhound", cost: 2, desc: "Doppelte Ausdauer beim Sprinten" },
-  { name: "Scopesmith", cost: 2, desc: "Im Scope bleiben nach dem Schuss" },
-  { name: "Steady Aim", cost: 2, desc: "Weniger Waffenzittern im Scope" },
-  { name: "Vulture", cost: 2, desc: "Hunt Dollars beim Looten von Huntern" },
-  { name: "Iron Eye", cost: 3, desc: "Im ADS bleiben bei Repetierwaffen" },
-  { name: "Kiteskin", cost: 3, desc: "Weniger Fallschaden" },
-  { name: "Ambidextrous", cost: 3, desc: "Schnelleres Nachladen bei Dual Pistols" },
-  { name: "Beastface", cost: 3, desc: "Tiere greifen weniger an" },
-  { name: "Gator Legs", cost: 3, desc: "Schneller im Wasser, weniger Ausdauer" },
-  { name: "Bulletgrubber", cost: 4, desc: "Patronen beim Teilladen behalten" },
+  { name: "Adrenaline", cost: 1, desc: "Kleiner Ausdauerschub bei kritischer Gesundheit" },
+  { name: "Assailant", cost: 1, desc: "Besserer Nahkampf mit Wurfmessern und -äxten" },
+  { name: "Blade Seer", cost: 1, desc: "Pfeile, Bolzen und Wurfwaffen in Dark Sight sichtbar" },
+  { name: "Dauntless", cost: 1, desc: "Geworfene Sprengstoffe lassen sich entschärfen" },
+  { name: "Decoy Supply", cost: 1, desc: "Köder an Munitionskisten auffüllen" },
+  { name: "Kiteskin", cost: 1, desc: "Deutlich weniger Fallschaden" },
+  { name: "Magpie", cost: 1, desc: "Kopfgeld-Token gibt Gegengift, Ausdauer und Regeneration" },
+  { name: "Poacher", cost: 1, desc: "Fallen leise legen und entschärfen" },
+  { name: "Poison Sense", cost: 1, desc: "Vergiftete Hunter in Dark Sight sichtbar" },
+  { name: "Vigilant", cost: 1, desc: "Fallen und Käfer in Dark Sight hervorgehoben" },
+  { name: "Whispersmith", cost: 1, desc: "Leiseres Wechseln der Ausrüstung" },
+  { name: "Bulwark", cost: 2, desc: "50 % weniger Explosions- und Bomb-Lance-Schaden" },
+  { name: "Martialist", cost: 2, desc: "Katana einstecken für starken ersten Schlag" },
+  { name: "Salveskin", cost: 2, desc: "Weniger Feuerschaden" },
+  { name: "Scopesmith", cost: 2, desc: "Nach dem Schuss im Zielfernrohr bleiben" },
+  { name: "Steady Aim", cost: 2, desc: "Weniger Waffenzittern im Zielfernrohr" },
+  { name: "Vulture", cost: 2, desc: "Looten von Huntern gibt immer Geld" },
+  { name: "Ambidextrous", cost: 3, desc: "Schnelleres Nachladen bei Waffenpaaren" },
+  { name: "Bloodless", cost: 3, desc: "Blutung wird nicht schlimmer" },
+  { name: "Bolt Thrower", cost: 3, desc: "Schnelleres Armbrust-Nachladen" },
+  { name: "Gator Legs", cost: 3, desc: "Schneller im tiefen Wasser" },
+  { name: "Ghoul", cost: 3, desc: "Monster töten heilt ein wenig" },
+  { name: "Hornskin", cost: 3, desc: "25 % weniger Schaden durch stumpfen Nahkampf" },
+  { name: "Hundred Hands", cost: 3, desc: "Mehr Bogenschaden, Pfeile im Nahkampf nutzbar" },
+  { name: "Iron Eye", cost: 3, desc: "Zwischen Schüssen im Visier bleiben (Repetierer)" },
+  { name: "Mithridatist", cost: 3, desc: "Viel schnellere Erholung von Gift" },
+  { name: "Resilience", cost: 3, desc: "Wiederbelebt mit voller Gesundheit" },
+  { name: "Vigor", cost: 3, desc: "Doppelte Regeneration in Dark Sight" },
+  { name: "Beastface", cost: 4, desc: "Tiere reagieren erst aus kürzerer Distanz" },
+  { name: "Bulletgrubber", cost: 4, desc: "Beim Teilladen die Patrone behalten" },
+  { name: "Determination", cost: 4, desc: "Ausdauer erholt sich früher" },
   { name: "Fast Fingers", cost: 4, desc: "Schnelleres Nachladen bei Einzelschussgewehren" },
-  { name: "Lightfoot", cost: 4, desc: "Leiser beim Klettern und Vaulten" },
-  { name: "Magpie", cost: 4, desc: "Mehr Munition beim Aufsammeln" },
-  { name: "Poacher", cost: 4, desc: "Munition aus getöteten Huntern nehmen" },
-  { name: "Resilience", cost: 4, desc: "Aufstehen mit mehr Leben" },
-  { name: "Serpent", cost: 4, desc: "Clues aus der Distanz nehmen (25m)" },
-  { name: "Physician", cost: 5, desc: "Schnelleres Heilen" },
-  { name: "Quartermaster", cost: 5, desc: "Große Waffe + Werkzeugslot" },
-  { name: "Shadow", cost: 5, desc: "Leiser beim Bewegen" },
-  { name: "Frontiersman", cost: 5, desc: "Mehr Munitionskapazität" },
-  { name: "Ghoul", cost: 5, desc: "Health-Chunk beim Banishen regenerieren" },
-  { name: "Packmule", cost: 5, desc: "Mehr Werkzeugslots" },
-  { name: "Conduit", cost: 6, desc: "Dark Sight schneller aufladen" },
-  { name: "Determination", cost: 6, desc: "Schneller wieder kämpfbereit nach Niederschlag" },
-  { name: "Whispersmith", cost: 6, desc: "Waffen leiser beim Nachladen" },
-  { name: "Levering", cost: 7, desc: "Schnelleres Feuern bei Hebelwaffen aus der Hüfte" },
-  { name: "Iron Sharpshooter", cost: 7, desc: "Kein Zittern beim Zielen aus dem Stehen" },
-  { name: "Necromancer", cost: 7, desc: "Teammate wiederbeleben ohne Dark Sight (Burn Trait)" },
-  { name: "Fanning", cost: 8, desc: "Schnellfeuer bei Single-Action Pistolen aus der Hüfte" },
-  { name: "Martialist", cost: 8, desc: "Schnellere Nahkampfattacken" },
+  { name: "Levering", cost: 4, desc: "Schnelleres Hüftfeuer bei Hebelwaffen" },
+  { name: "Packmule", cost: 4, desc: "Zusätzliches Werkzeug oder Verbrauchsgut beim Looten" },
+  { name: "Serpent", cost: 4, desc: "Clues und Rifts aus der Distanz in Dark Sight nutzen" },
+  { name: "Silent Killer", cost: 4, desc: "Leisere Nahkampfangriffe" },
+  { name: "Conduit", cost: 5, desc: "Gesundheit und Ausdauer bei Clue oder geschlossenem Rift" },
+  { name: "Greyhound", cost: 5, desc: "Länger mit voller Geschwindigkeit sprinten" },
+  { name: "Lightfoot", cost: 5, desc: "Lautlos springen, fallen und klettern" },
+  { name: "Physician", cost: 5, desc: "Schnelleres Verbinden" },
+  { name: "Witness", cost: 5, desc: "Tote Hunter und Monster in Dark Sight sehen" },
+  { name: "Frontiersman", cost: 6, desc: "Werkzeuge einmal öfter nutzbar" },
+  { name: "Pitcher", cost: 6, desc: "Grössere Wurfweite" },
+  { name: "Quartermaster", cost: 8, desc: "+1 Waffenkapazität (6 statt 5 Ausrüstungspunkte)" },
+  { name: "Fanning", cost: 8, desc: "Schnellfeuer mit einhändigen Single-Action-Pistolen" },
+  { name: "Doctor", cost: 9, desc: "Verbandskästen heilen doppelt" },
 ];
 
 // ── ALLE LEGENDARY HUNTER SKINS ─────────────────────────────────────────────
@@ -244,7 +257,7 @@ const SKIN_MODES = [
   { id: "theme", label: "Nach Thema" },
   { id: "exact", label: "Genauer Skin" },
 ];
-const BUDGET_OPTIONS = [3, 5, 7, 10, 15];
+const BUDGET_OPTIONS = [3, 5, 8, 10, 15, 20];
 
 function getRandom(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
 
@@ -282,8 +295,8 @@ const GROUP_BONUS = {
 };
 function weaponBonus(w) {
   if (!w) return 0;
-  if (/Melee|Bowie|Kukri|Combat Axe|Dusters|Machete/.test(w)) return 2;
-  if (/Bomblance|Crossbow/.test(w)) return 1;
+  if (/Nahkampf|Combat Axe|Katana|Railroad Hammer|Baseball Bat|Cavalry Saber|Machete/.test(w)) return 2;
+  if (/Bomb Lance|Crossbow|Hunting Bow/.test(w)) return 1;
   return 0;
 }
 function challengeBonus(ch) {
@@ -330,24 +343,38 @@ function allowed(arr, excluded) {
   const p = arr.filter(x => !(excluded || []).includes(x));
   return p.length ? p : arr;
 }
-function pickWeapon(weaponMode, excl) {
-  const cats = allowed(WEAPON_CATEGORIES, excl.cat);
-  const ws = allowed(WEAPONS_EXACT, excl.weapon);
-  if (weaponMode === "category") return getRandom(cats);
-  if (weaponMode === "exact") return getRandom(ws);
-  return `${getRandom(cats)} → ${getRandom(ws)}`;
+function capFor(tr) { return tr && tr.traits.some(t => t.name === "Quartermaster") ? 6 : 5; }
+function pickLoadout(excl, cap) {
+  const okC = allowed(WEAPON_CATEGORIES, excl.cat);
+  const off = excl.weapon || [];
+  let pool = WEAPONS.filter(w => okC.includes(w.a) && !off.includes(w.n));
+  if (!pool.length) pool = WEAPONS;
+  const first = getRandom(pool);
+  const rest = pool.filter(w => w !== first && first.s + w.s <= cap);
+  const ws = rest.length ? [first, getRandom(rest)] : [first];
+  return { ws, total: ws.reduce((a, w) => a + w.s, 0) };
+}
+function weaponText(ws, mode) {
+  return ws.map(w => mode === "category" ? `${w.a} (Gr. ${w.s})` : mode === "exact" ? `${w.n} (Gr. ${w.s})` : `${w.a} → ${w.n} (Gr. ${w.s})`).join("  +  ");
+}
+function pickSkin(skinMode, theme) {
+  const s = generateSkin(skinMode, theme);
+  return s.skin || `${s.themeIcon} ${s.themeName}`;
 }
 function pickPlaystyle(excl, customStyles) {
   return getRandom(allowed([...PLAYSTYLES, ...customStyles], excl.style));
 }
 
-function generateChallenge(cfg, sameWeapon) {
-  const weapon = sameWeapon || pickWeapon(cfg.weaponMode, cfg.excl);
-  const playstyle = cfg.includePlaystyle ? pickPlaystyle(cfg.excl, cfg.customStyles) : null;
+function generateChallenge(cfg, sameLoadout) {
   const traitResult = cfg.traitBudget > 0 ? generateTraits(cfg.traitBudget) : null;
+  const cap = capFor(traitResult);
+  const lo = sameLoadout || pickLoadout(cfg.excl, cap);
+  const weapon = weaponText(lo.ws, cfg.weaponMode);
+  const playstyle = cfg.includePlaystyle ? pickPlaystyle(cfg.excl, cfg.customStyles) : null;
   const chat = cfg.includeChat ? getRandom(allowed([...CHAT_RULES, ...(cfg.customChat || [])], cfg.excl.chat)) : null;
   const role = cfg.includeRole ? getRandom(allowed(ROLES, cfg.excl.role)) : null;
-  return { weapon, playstyle, traitResult, chat, role };
+  const skin = cfg.includeSkin ? pickSkin(cfg.skinMode, cfg.selectedTheme) : null;
+  return { weapon, wtotal: lo.total, cap, playstyle, traitResult, chat, role, skin };
 }
 
 function generateSkin(skinMode, selectedTheme) {
@@ -369,7 +396,8 @@ function challengeText(pl, res, g, m, budget) {
   if (m) lines.push(`🗺 Karte: ${m.map} · Boss: ${m.boss}`);
   if (g) lines.push(`👥 Gruppe: ${g.name} – ${g.desc}`);
   res.forEach((c, i) => {
-    let l = `${pl[i] ? pl[i].name : "Spieler"}: 🔫 ${c.weapon}`;
+    let l = `${pl[i] ? pl[i].name : "Spieler"}: 🔫 ${c.weapon} [${c.wtotal}/${c.cap} AP]`;
+    if (c.skin) l += ` | 🎭 ${c.skin}`;
     if (c.playstyle) l += ` | 🎮 ${c.playstyle}`;
     if (c.chat) l += ` | 💬 ${c.chat}`;
     if (c.role) l += ` | 🧭 ${c.role}`;
@@ -377,9 +405,6 @@ function challengeText(pl, res, g, m, budget) {
     lines.push(l);
   });
   return lines.join("\n");
-}
-function skinText(pl, res) {
-  return ["🎭 Hunt Skins", ...res.map((s, i) => `${pl[i] ? pl[i].name : "Spieler"}: ${s.skin || s.themeName}`)].join("\n");
 }
 function copyText(text, onDone) {
   const fallback = () => {
@@ -439,7 +464,7 @@ const toggleDot = (active) => ({
 });
 const sL = { fontSize:10, letterSpacing:"0.25em", color:"#6a5030", marginBottom:5, textTransform:"uppercase" };
 const cL = { fontSize:11, letterSpacing:"0.2em", color:"#a08060", display:"block", marginBottom:10, textTransform:"uppercase" };
-const TABS = [{ id:"challenge", label:"⚔ Challenge" }, { id:"skin", label:"🎭 Skin" }, { id:"score", label:"📊 Scoreboard" }, { id:"turnier", label:"🏆 Turnierzähler" }];
+const TABS = [{ id:"challenge", label:"⚔ Challenge" }, { id:"score", label:"📊 Scoreboard" }, { id:"turnier", label:"🏆 Turnierzähler" }];
 const BG = `radial-gradient(ellipse at 50% 0%, rgba(180,80,20,0.12) 0%, transparent 60%), url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.012'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`;
 
 // ── GEMEINSAME HELFER ────────────────────────────────────────────────────────
@@ -742,11 +767,9 @@ export default function HuntChallengeGenerator() {
   const [used, setUsed] = useState([0, 0, 0]);
   const [done, setDone] = useState([false, false, false]);
   const [groupDone, setGroupDone] = useState(false);
-  const [skinMode, setSkinMode] = useState("exact");
-  const [selectedTheme, setSelectedTheme] = useState("all");
-  const [skinResults, setSkinResults] = useState(null);
-  const [skinRolling, setSkinRolling] = useState(false);
-  const [skinRollFrame, setSkinRollFrame] = useState(null);
+  const [skinMode, setSkinMode] = usePersist("hunt-skinmode", "exact");
+  const [selectedTheme, setSelectedTheme] = usePersist("hunt-skintheme", "random");
+  const [includeSkin, setIncludeSkin] = usePersist("hunt-skin", false);
   const [copied, setCopied] = useState(null);
   const [showFilter, setShowFilter] = useState(false);
   const [showCustom, setShowCustom] = useState(false);
@@ -757,7 +780,7 @@ export default function HuntChallengeGenerator() {
   const [newGroupDesc, setNewGroupDesc] = useState("");
 
   const activePlayers = players.slice(0, playerCount);
-  const cfg = { weaponMode, includePlaystyle, traitBudget, excl, customStyles, includeChat, includeRole, customChat };
+  const cfg = { weaponMode, includePlaystyle, traitBudget, excl, customStyles, includeChat, includeRole, customChat, includeSkin, skinMode, selectedTheme };
   const allGroups = [...GROUP_CHALLENGES, ...customGroups.filter(g => g.name).map(g => ({ name: g.name, desc: g.desc || "Eigene Gruppenchallenge", icon: "✨" }))];
   const excludedCount = (excl.cat || []).length + (excl.weapon || []).length + (excl.style || []).length + (excl.chat || []).length + (excl.role || []).length;
   const isMobile = useIsMobile();
@@ -786,7 +809,7 @@ export default function HuntChallengeGenerator() {
   };
 
   const makeAll = () => {
-    const same = duel ? pickWeapon(weaponMode, excl) : null;
+    const same = duel ? pickLoadout(excl, 5) : null;
     return activePlayers.map(() => generateChallenge(cfg, same));
   };
 
@@ -810,30 +833,19 @@ export default function HuntChallengeGenerator() {
     }, 60);
   }
 
-  function rollSkins() {
-    setSkinRolling(true); setSkinResults(null);
-    let ticks = 0;
-    const iv = setInterval(() => {
-      ticks++;
-      setSkinRollFrame(activePlayers.map(() => generateSkin(skinMode, selectedTheme)));
-      if (ticks >= 18) {
-        clearInterval(iv);
-        const res = activePlayers.map(() => generateSkin(skinMode, selectedTheme));
-        setSkinResults(res); setSkinRollFrame(null); setSkinRolling(false);
-        addHistory("🎭 Skin", skinText(activePlayers, res));
-      }
-    }, 60);
-  }
-
   function reroll(i, part) {
     if (!challenges || (used[i] || 0) >= rerollLimit) return;
     setChallenges(prev => prev.map((c, idx) => {
       if (idx !== i) return c;
-      if (part === "weapon") return { ...c, weapon: pickWeapon(weaponMode, excl) };
+      if (part === "weapon") { const lo = pickLoadout(excl, capFor(c.traitResult)); return { ...c, weapon: weaponText(lo.ws, weaponMode), wtotal: lo.total }; }
+      if (part === "skin") return { ...c, skin: pickSkin(skinMode, selectedTheme) };
       if (part === "playstyle") return { ...c, playstyle: pickPlaystyle(excl, customStyles) };
       if (part === "chat") return { ...c, chat: getRandom(allowed([...CHAT_RULES, ...customChat], excl.chat)) };
       if (part === "role") return { ...c, role: getRandom(allowed(ROLES, excl.role)) };
-      return { ...c, traitResult: generateTraits(traitBudget) };
+      const tr = generateTraits(traitBudget);
+      const cap = capFor(tr);
+      if (c.wtotal > cap) { const lo = pickLoadout(excl, cap); return { ...c, traitResult: tr, cap, weapon: weaponText(lo.ws, weaponMode), wtotal: lo.total }; }
+      return { ...c, traitResult: tr, cap };
     }));
     setUsed(prev => prev.map((u, idx) => idx === i ? u + 1 : u));
   }
@@ -852,7 +864,6 @@ export default function HuntChallengeGenerator() {
 
   const display = rolling ? rollFrame : challenges;
   const displayGroup = rolling ? rollGroupFrame : groupChallenge;
-  const displaySkins = skinRolling ? skinRollFrame : skinResults;
   const cardGrid = { display: "grid", gap: 14, gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))" };
 
   const rerollBtn = (i, part) => (rerollLimit > 0 && !rolling && (used[i] || 0) < rerollLimit)
@@ -958,6 +969,7 @@ export default function HuntChallengeGenerator() {
                   [includePlaystyle, () => setIncludePlaystyle(v => !v), "Individuelle Spielweise würfeln"],
                   [includeChat, () => setIncludeChat(v => !v), "Chat-Regel würfeln"],
                   [includeRole, () => setIncludeRole(v => !v), "Rolle würfeln"],
+                  [includeSkin, () => setIncludeSkin(v => !v), "Skin würfeln"],
                   [includeGroup, () => setIncludeGroup(v => !v), "Gruppenchallenge würfeln"],
                   [includeMap, () => setIncludeMap(v => !v), "Karte & Boss würfeln"],
                   [duel, () => setDuel(v => !v), "Duell: alle bekommen dieselbe Waffe"],
@@ -968,6 +980,20 @@ export default function HuntChallengeGenerator() {
                   </div>
                 ))}
               </div>
+
+              {includeSkin && (
+                <div style={{ marginBottom: 18 }}>
+                  <label style={cL}>Skin-Modus</label>
+                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 12 }}>
+                    {SKIN_MODES.map(m => <button key={m.id} onClick={() => setSkinMode(m.id)} style={btn(skinMode === m.id)}>{m.label}</button>)}
+                  </div>
+                  <label style={cL}>Skin-Thema</label>
+                  <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                    <button onClick={() => setSelectedTheme("random")} style={btn(selectedTheme === "random")}>🎲 Zufällig</button>
+                    {SKIN_THEMES.filter(t => t.id !== "all").map(t => <button key={t.id} onClick={() => setSelectedTheme(t.id)} style={btn(selectedTheme === t.id)}>{t.icon} {t.name}</button>)}
+                  </div>
+                </div>
+              )}
 
               {/* Filter */}
               <div style={{ marginBottom: 12 }}>
@@ -1073,8 +1099,8 @@ export default function HuntChallengeGenerator() {
                     <div style={{ position: "absolute", bottom: 7, left: 9, color: "rgba(180,80,20,0.3)", fontSize: 9 }}>✦</div>
                     <div style={{ fontSize: 10, letterSpacing: "0.3em", color: "#b45014", textTransform: "uppercase", marginBottom: 12, display: "flex", alignItems: "center", gap: 7 }}><Crosshair />{activePlayers[i]?.name}</div>
 
-                    <div style={{ marginBottom: ch.playstyle || ch.traitResult || ch.chat || ch.role ? 12 : 0 }}>
-                      <div style={sL}>🔫 Waffe{rerollBtn(i, "weapon")}</div>
+                    <div style={{ marginBottom: ch.playstyle || ch.traitResult || ch.chat || ch.role || ch.skin ? 12 : 0 }}>
+                      <div style={sL}>🔫 Waffen{rerollBtn(i, "weapon")}<span style={{ marginLeft: 10, color: "#b45014" }}>{ch.wtotal}/{ch.cap} Ausrüstungspunkte</span></div>
                       <div style={{ fontFamily: "'IM Fell English', serif", fontSize: "clamp(13px, 2.5vw, 16px)", color: "#e8d0a0", lineHeight: 1.3 }}>{ch.weapon}</div>
                     </div>
 
@@ -1082,6 +1108,13 @@ export default function HuntChallengeGenerator() {
                       <div style={{ borderTop: "1px solid rgba(180,80,20,0.15)", paddingTop: 10, marginBottom: ch.traitResult ? 10 : 0 }}>
                         <div style={sL}>🎮 Spielweise{rerollBtn(i, "playstyle")}</div>
                         <div style={{ fontFamily: "'IM Fell English', serif", fontStyle: "italic", fontSize: "clamp(11px, 2vw, 13px)", color: "#a09060", lineHeight: 1.4 }}>{ch.playstyle}</div>
+                      </div>
+                    )}
+
+                    {ch.skin && (
+                      <div style={{ borderTop: "1px solid rgba(180,80,20,0.15)", paddingTop: 10, marginBottom: 10 }}>
+                        <div style={sL}>🎭 Skin{rerollBtn(i, "skin")}</div>
+                        <div style={{ fontFamily: "'IM Fell English', serif", fontSize: "clamp(12px, 2vw, 14px)", color: "#e8d0a0", lineHeight: 1.4 }}>{ch.skin}</div>
                       </div>
                     )}
 
@@ -1139,73 +1172,8 @@ export default function HuntChallengeGenerator() {
           </>
         )}
 
-        {/* ═══ SKIN TAB ═══ */}
-        {tab === "skin" && (
-          <>
-            <div style={{ background: "rgba(255,255,255,0.022)", border: "1px solid rgba(180,80,20,0.25)", borderRadius: 4, padding: "22px 26px", marginBottom: 22, boxShadow: "inset 0 1px 0 rgba(255,255,255,0.04), 0 4px 24px rgba(0,0,0,0.4)" }}>
-              <div style={{ fontSize: 9, letterSpacing: "0.3em", color: "#8a6a40", marginBottom: 18, textTransform: "uppercase" }}>⚙ Skin Konfiguration</div>
-
-              {countButtons}
-              {nameInputs}
-              <div style={{ marginBottom: 18 }}>
-                <label style={cL}>Modus</label>
-                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                  {SKIN_MODES.map(m => <button key={m.id} onClick={() => setSkinMode(m.id)} style={btn(skinMode === m.id)}>{m.label}</button>)}
-                </div>
-              </div>
-              <div>
-                <label style={cL}>Thema / Filter</label>
-                <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                  <button onClick={() => setSelectedTheme("random")} style={btn(selectedTheme === "random")}>🎲 Zufälliges Thema</button>
-                  {SKIN_THEMES.map(t => <button key={t.id} onClick={() => setSelectedTheme(t.id)} style={btn(selectedTheme === t.id)}>{t.icon} {t.name}</button>)}
-                </div>
-              </div>
-            </div>
-
-            {rollBtn(skinRolling, rollSkins, "🎭  Skin würfeln", "Outfit wird ausgewählt...")}
-
-            {displaySkins && (
-              <div style={cardGrid}>
-                {displaySkins.map((s, i) => (
-                  <div key={i} style={{ background: "rgba(10,7,4,0.7)", border: "1px solid rgba(180,80,20,0.35)", borderRadius: 4, padding: "20px 18px", position: "relative", boxShadow: skinRolling ? "none" : "0 0 24px rgba(180,80,20,0.15)", animation: skinRolling ? "none" : "fadeIn 0.4s ease forwards", opacity: skinRolling ? 0.6 : 1 }}>
-                    <div style={{ position: "absolute", top: 7, right: 9, color: "rgba(180,80,20,0.3)", fontSize: 9 }}>✦</div>
-                    <div style={{ position: "absolute", bottom: 7, left: 9, color: "rgba(180,80,20,0.3)", fontSize: 9 }}>✦</div>
-                    <div style={{ fontSize: 10, letterSpacing: "0.3em", color: "#b45014", textTransform: "uppercase", marginBottom: 14, display: "flex", alignItems: "center", gap: 7 }}><Crosshair />{activePlayers[i]?.name}</div>
-                    {s.themeName ? (
-                      <>
-                        <div style={sL}>🎭 Skin-Thema</div>
-                        <div style={{ fontSize: 22, marginBottom: 6 }}>{s.themeIcon}</div>
-                        <div style={{ fontFamily: "'Cinzel Decorative', serif", fontSize: "clamp(13px, 2.5vw, 17px)", color: "#f0d8a0", lineHeight: 1.3 }}>{s.themeName}</div>
-                        <div style={{ fontFamily: "'IM Fell English', serif", fontStyle: "italic", fontSize: 11, color: "#6a5030", marginTop: 6 }}>Wähle einen Skin aus dieser Kategorie</div>
-                        <div style={{ marginTop: 10, borderTop: "1px solid rgba(180,80,20,0.12)", paddingTop: 8 }}>
-                          <div style={sL}>Beispiele ({(s.themeSkins || []).length} Skins)</div>
-                          <div style={{ fontFamily: "'IM Fell English', serif", fontStyle: "italic", fontSize: 11, color: "#7a6040", lineHeight: 1.7 }}>
-                            {(s.themeSkins || []).slice(0, 4).map((name, idx) => <div key={idx}>{name}</div>)}
-                            {(s.themeSkins || []).length > 4 && <div style={{ color: "#5a4030" }}>+{(s.themeSkins || []).length - 4} weitere...</div>}
-                          </div>
-                        </div>
-                      </>
-                    ) : (
-                      <>
-                        <div style={sL}>🎭 Skin</div>
-                        <div style={{ fontFamily: "'IM Fell English', serif", fontSize: "clamp(13px, 2.5vw, 16px)", color: "#e8d0a0", lineHeight: 1.5 }}>{s.skin}</div>
-                      </>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
-            {skinResults && !skinRolling && (
-              <div style={{ textAlign: "center", marginTop: 18 }}>
-                {copyBtn("skin", () => skinText(activePlayers, skinResults))}
-              </div>
-            )}
-            {!displaySkins && !skinRolling && <div style={{ textAlign: "center", padding: "36px 20px", color: "#3a2a18", fontFamily: "'IM Fell English', serif", fontStyle: "italic", fontSize: 14, border: "1px dashed rgba(180,80,20,0.1)", borderRadius: 4 }}>Würfele und das Bayou bestimmt euer Outfit.</div>}
-          </>
-        )}
-
         {/* ═══ VERLAUF (Challenge + Skin) ═══ */}
-        {(tab === "challenge" || tab === "skin") && history.length > 0 && (
+        {tab === "challenge" && history.length > 0 && (
           <div style={{ marginTop: 28 }}>
             <button onClick={() => setShowHistory(v => !v)} style={btn(showHistory)}>📜 Verlauf {showHistory ? "ausblenden" : "anzeigen"} ({history.length})</button>
             {showHistory && (
